@@ -1,0 +1,12 @@
+{
+  "tickers": [
+    "VT",
+    "GLD",
+    "EWJ"
+  ],
+  "fx": [
+    "EUR",
+    "JPY",
+    "USD"
+  ]
+}
