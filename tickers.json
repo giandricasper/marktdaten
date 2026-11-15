@@ -1,12 +1,15 @@
 {
   "tickers": [
-    "VT",
-    "GLD",
-    "EWJ"
+    "AUUSI.SW",
+    "CSSPX.SW",
+    "CTEC.SW",
+    "EMMUSC.SW",
+    "JPNA.SW",
+    "VWRA.SW",
+    "XDWH.DE"
   ],
   "fx": [
     "EUR",
-    "JPY",
     "USD"
   ]
 }
