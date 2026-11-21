@@ -203,6 +203,7 @@ ROWS = {
     "cash": ["Cash And Cash Equivalents", "Cash Cash Equivalents And Short Term Investments"],
     "equity": ["Stockholders Equity", "Common Stock Equity"],
     "shares": ["Ordinary Shares Number", "Share Issued"],
+    "minority": ["Minority Interest"],
 }
 
 
@@ -253,10 +254,11 @@ SEC_TAGS = {
     "ltdebt": ["LongTermDebt", "LongTermDebtNoncurrent"],
     "stdebt": ["DebtCurrent", "LongTermDebtCurrent", "ShortTermBorrowings"],
     "cash": ["CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"],
-    "equity": ["StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"],
+    "equity": ["StockholdersEquity"],
+    "minority": ["MinorityInterest"],
     "shares": ["WeightedAverageNumberOfDilutedSharesOutstanding", "WeightedAverageNumberOfSharesOutstandingBasic"],
 }
-INSTANT = {"ltdebt", "stdebt", "cash", "equity"}
+INSTANT = {"ltdebt", "stdebt", "cash", "equity", "minority"}
 
 
 def sec_cik_map():
@@ -321,7 +323,7 @@ def sec_years(cik):
                       "ebitda": sig(ebit + da) if ebit is not None and da is not None else None,
                       "ni": sig(g("ni")), "da": sig(da), "int": sig(g("int")), "taxrate": sig(taxrate, 4),
                       "eps": sig(g("eps")), "ocf": sig(g("ocf")), "capex": sig(-capex) if capex is not None else None,
-                      "divps": sig(g("divps")), "debt": sig(debt), "cash": sig(g("cash")), "equity": sig(g("equity")),
+                      "divps": sig(g("divps")), "debt": sig(debt), "cash": sig(g("cash")), "equity": sig(g("equity")), "minority": sig(g("minority")),
                       "shares": sig(g("shares"))})
     return years
 
@@ -439,7 +441,10 @@ def main():
         cik_map = sec_cik_map()
     except Exception as e:  # noqa: BLE001
         cik_map = {}
-        out["fehler"]["SEC"] = str(e)[:200]
+        hint = (" – die SEC verlangt eine echte Kontaktangabe: unter Settings → Secrets and variables → Actions → Variables "
+                "eine Variable SEC_UA anlegen, z.B. «Finanzcockpit Vorname Nachname name@mail.ch»") if "403" in str(e) else ""
+        out["fehler"]["SEC"] = (str(e)[:150] + hint)
+        log("SEC nicht erreichbar:", e, hint)
 
     currencies = {"USD", "EUR", "JPY", "HKD"}
     for idx, members in uni["indizes"].items():
