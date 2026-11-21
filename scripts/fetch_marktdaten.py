@@ -2,7 +2,7 @@
 """
 Finanzcockpit – Marktdaten-Abruf
 ================================
-Lädt für alle Ticker aus tickers.json die Kursverläufe (5 Jahre, Wochenschlusskurse)
+Lädt für alle Ticker aus tickers.json die Kursverläufe (10 Jahre, Wochenschlusskurse)
 sowie Wechselkurse in CHF über yfinance (Yahoo Finance) und schreibt sie nach
 data/marktdaten.json. Läuft wöchentlich via GitHub Actions, kann aber auch lokal
 gestartet werden:   pip install yfinance pandas   →   python scripts/fetch_marktdaten.py
@@ -22,8 +22,29 @@ import yfinance as yf
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CFG = ROOT / "tickers.json"
 OUT = ROOT / "data" / "marktdaten.json"
-PERIOD = "5y"
+PERIOD = "10y"
 SUBUNITS = {"GBp": ("GBP", 100), "GBX": ("GBP", 100), "ZAc": ("ZAR", 100), "ILA": ("ILS", 100)}
+# Marktindikatoren für die Marktlage (immer geladen, unabhängig von tickers.json)
+INDICATORS = {"^GSPC": "S&P 500", "^SSMI": "SMI", "URTH": "MSCI World (ETF)", "^VIX": "VIX (Volatilität)",
+              "^TNX": "US-Rendite 10 Jahre", "^IRX": "US-Rendite 3 Monate"}
+
+# Börsen-Kürzel (MIC, z.B. Saxo-Format "VWRA:xswx") -> Yahoo-Endung
+MIC_SUFFIX = {"XSWX": ".SW", "XVTX": ".SW", "XETR": ".DE", "XETA": ".DE", "XFRA": ".F", "XLON": ".L", "XAMS": ".AS",
+              "XPAR": ".PA", "XMIL": ".MI", "XBRU": ".BR", "XMAD": ".MC", "XWBO": ".VI", "XSTO": ".ST", "XCSE": ".CO",
+              "XHEL": ".HE", "XOSL": ".OL", "XTKS": ".T", "XHKG": ".HK", "XASX": ".AX", "XTSE": ".TO", "XNAS": "",
+              "XNYS": "", "ARCX": "", "BATS": "", "XASE": ""}
+
+
+def yahoo_symbol(sym: str) -> str:
+    """Wandelt "VWRA:xswx" in "VWRA.SW" um; Yahoo-Ticker bleiben unverändert."""
+    s = sym.strip().upper()
+    if ":" in s:
+        base, mic = s.split(":", 1)
+        if mic in MIC_SUFFIX:
+            if mic == "XHKG" and base.isdigit():
+                base = base.zfill(4)
+            return base + MIC_SUFFIX[mic]
+    return s
 
 
 def weekly_series(sym: str):
@@ -76,7 +97,7 @@ def main():
 
     for sym in tickers:
         try:
-            t, pts = weekly_series(sym)
+            t, pts = weekly_series(yahoo_symbol(sym))
             cur, name = currency_and_name(t)
             if cur in SUBUNITS:
                 cur, div = SUBUNITS[cur]
@@ -104,6 +125,18 @@ def main():
             out["fehler"][sym] = str(e)[:200]
             if cur in old.get("fx", {}):
                 out["fx"][cur] = old["fx"][cur]
+            print(f"FEHL {sym:<14} {e}", file=sys.stderr)
+
+    out["indikatoren"] = {}
+    for sym, name in INDICATORS.items():
+        try:
+            _, pts = weekly_series(sym)
+            out["indikatoren"][sym] = {"name": name, "verlauf": pts}
+            print(f"OK   {sym:<14} {len(pts)} Wochen (Indikator)")
+        except Exception as e:  # noqa: BLE001
+            out["fehler"][sym] = str(e)[:200]
+            if sym in old.get("indikatoren", {}):
+                out["indikatoren"][sym] = old["indikatoren"][sym]
             print(f"FEHL {sym:<14} {e}", file=sys.stderr)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
