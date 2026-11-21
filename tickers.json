@@ -1,12 +1,15 @@
 {
   "tickers": [
     "AUUSI.SW",
+    "BTC-USD",
     "CHDVD.SW",
+    "CHSPI.SW",
     "CSSPX.SW",
     "CTEC.SW",
     "EMMUSC.SW",
     "EUNE.SW",
     "JPNA.SW",
+    "VT",
     "VWRA.SW",
     "XDWH.DE"
   ],
