@@ -25,3 +25,18 @@ Im Cockpit unter «Daten» `tickers.json` herunterladen und hier ersetzen (Datei
 - Den Ticker auf finance.yahoo.com prüfen (Börsenendung: `.SW` SIX, `.L` London, `.DE` XETRA, `.T` Tokio, `.HK` Hongkong).
 - Lokal testen: `pip install yfinance pandas` und danach `python scripts/fetch_marktdaten.py`.
 - Notfall ohne GitHub: das Skript lokal ausführen und `data/marktdaten.json` im Cockpit über «Datei importieren» laden.
+
+## Aktiendaten für Seite 03 (Einzelaktien-Bewertung)
+
+Ein zweiter Workflow, **«Aktiendaten aktualisieren»** (`.github/workflows/aktien.yml`), läuft jeden Sonntag um 05:23 UTC und schreibt `data/aktien.json` (ca. 2–4 MB) und `data/universum.json`.
+
+| Datei | Zweck |
+|---|---|
+| `aktien_universum.json` | Startliste je Index (S&P 500, DAX, SMI, Nikkei 225, Hang Seng). Der Workflow liest einmal pro Monat die aktuelle Zusammensetzung von Wikipedia und wählt die grössten Titel nach Marktkapitalisierung; klappt das nicht, gilt die Startliste. |
+| `scripts/fetch_aktien.py` | Lädt Kurse ab 2010 (inkl. Dividenden), Kennzahlen, Jahresabschlüsse (Yahoo; US-Titel zusätzlich SEC EDGAR mit Einreichungsdatum), Wechselkurse und Wikipedia-Seitenaufrufe. |
+
+**Einrichten:** die drei Dateien ins Repository hochladen, dann unter *Actions → Aktiendaten aktualisieren → Run workflow* einmal manuell starten. Der erste Lauf dauert 20–60 Minuten. Das Cockpit findet `aktien.json` automatisch neben `marktdaten.json`.
+
+**SEC-Kontakt:** Die SEC verlangt bei automatischen Abrufen eine Kontaktangabe im User-Agent. Standard ist eine anonyme GitHub-Adresse; du kannst unter *Settings → Secrets and variables → Actions → Variables* eine Variable `SEC_UA` anlegen (z.B. «Finanzcockpit Vorname Nachname mail@beispiel.ch»); der Workflow übernimmt sie automatisch.
+
+**Fehler:** Einzelne Titel, die nicht antworten, landen unter `"fehler"`; ihre Daten vom letzten Lauf bleiben erhalten.
